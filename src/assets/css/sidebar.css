@@ -1,0 +1,103 @@
+/* 侧边栏样式 */
+.sidebar {
+  width: 220px;
+  background-color: #2d3748;
+  color: #fff;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: all 0.3s ease;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar.collapse {
+  width: 64px;
+}
+
+/* 侧边栏Logo */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  background-color: #1989fa;
+  cursor: pointer;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin-left: 8px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapse .logo-text {
+  display: none;
+}
+
+/* 侧边栏菜单 */
+.sidebar-menu {
+  padding-top: 20px;
+}
+
+.menu-item {
+  margin-bottom: 4px;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.menu-link:hover,
+.menu-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.menu-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+}
+
+.menu-text {
+  margin-left: 12px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapse .menu-text {
+  display: none;
+}
+
+/* 菜单激活状态 */
+.menu-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background-color: #1989fa;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.show {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapse {
+    transform: translateX(0);
+    width: 64px;
+  }
+}
