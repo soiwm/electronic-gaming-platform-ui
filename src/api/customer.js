@@ -1,18 +1,43 @@
 import request from '@/utils/request';
 
-// 游戏列表接口：GET /api/customer/list → 转发到 http://localhost:8080/customer/list
+// 查询客户列表
 export function getCustomerList() {
   return request({
-    url: '/api/customer/list', // 带代理前缀 /api
+    url: '/api/customer/list',
     method: 'get'
   });
 }
 
-// 添加客户接口：POST /api/customer/add → 转发到 http://localhost:8080/customer/add
+// 根据 ID 查询客户
+export function getCustomerById(id) {
+  return request({
+    url: `/api/customer/${id}`,
+    method: 'get'
+  });
+}
+
+// 新增客户
 export function addCustomer(customerData) {
   return request({
     url: '/api/customer/add',
     method: 'post',
-    data: customerData // 请求体参数（后端用 @RequestBody 接收）
+    data: customerData
+  });
+}
+
+// 更新客户
+export function updateCustomer(customerData) {
+  return request({
+    url: '/api/customer/update',
+    method: 'put',
+    data: customerData
+  });
+}
+
+// 删除客户
+export function deleteCustomer(id) {
+  return request({
+    url: `/api/customer/delete/${id}`,
+    method: 'delete'
   });
 }

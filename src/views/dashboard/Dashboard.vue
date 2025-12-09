@@ -2,8 +2,7 @@
   <PageContainer title="系统首页">
     <div class="dashboard-content">
       <div class="stats-card">
-        <h3>欢迎使用管理系统</h3>
-        <p>这是基于 Vue3 模仿若依框架开发的管理系统模板</p>
+        <h3>欢迎使用电子游戏管理平台</h3>
         <div class="stats-grid">
           <div class="stat-item">
             <div class="stat-icon bg-primary">

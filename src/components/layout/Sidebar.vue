@@ -2,7 +2,7 @@
   <div :class="['sidebar', { collapse: sidebarCollapse }]" @click="handleSidebarClick">
     <div class="sidebar-logo" @click.stop="toggleSidebar">
       <font-awesome-icon icon="bars" />
-      <span class="logo-text">管理系统</span>
+      <span class="logo-text">电子游戏管理平台</span>
     </div>
     <ul class="sidebar-menu">
       <li class="menu-item" v-for="route in routes" :key="route.path">

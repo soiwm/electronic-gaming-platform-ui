@@ -40,7 +40,7 @@ const router = createRouter({
 // 路由守卫：设置页面标题
 router.beforeEach((to, from, next) => {
   if (to.meta.title) {
-    document.title = `${to.meta.title} - 仿若依管理系统`
+    document.title = `${to.meta.title} - 电子游戏管理平台`
   }
   next()
 })

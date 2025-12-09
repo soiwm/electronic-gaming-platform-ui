@@ -1,18 +1,43 @@
 import request from '@/utils/request';
 
-// 游戏列表接口：GET /api/game/list → 转发到 http://localhost:8080/game/list
+// 查询游戏列表
 export function getGameList() {
   return request({
-    url: '/api/game/list', // 带代理前缀 /api
+    url: '/api/game/list',
     method: 'get'
   });
 }
 
-// 添加游戏接口：POST /api/game/add → 转发到 http://localhost:8080/game/add
+// 根据 ID 查询游戏
+export function getGameById(id) {
+  return request({
+    url: `/api/game/${id}`, 
+    method: 'get'
+  });
+}
+
+// 新增游戏
 export function addGame(gameData) {
   return request({
     url: '/api/game/add',
     method: 'post',
-    data: gameData // 请求体参数（后端用 @RequestBody 接收）
+    data: gameData
+  });
+}
+
+// 更新游戏
+export function updateGame(gameData) {
+  return request({
+    url: '/api/game/update',
+    method: 'put', 
+    data: gameData
+  });
+}
+
+// 删除游戏
+export function deleteGame(id) {
+  return request({
+    url: `/api/game/delete/${id}`,
+    method: 'delete'
   });
 }
