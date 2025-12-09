@@ -9,7 +9,7 @@
               <font-awesome-icon icon="gamepad" />
             </div>
             <div class="stat-info">
-              <div class="stat-value">0</div>
+              <div class="stat-value">{{ gameCount }}</div>
               <div class="stat-label">游戏数量</div>
             </div>
           </div>
@@ -18,7 +18,7 @@
               <font-awesome-icon icon="users" />
             </div>
             <div class="stat-info">
-              <div class="stat-value">0</div>
+              <div class="stat-value">{{ customerCount }}</div>
               <div class="stat-label">客户数量</div>
             </div>
           </div>
@@ -30,9 +30,48 @@
 
 <script>
 import PageContainer from '@/components/common/PageContainer.vue'
+import { getGameList } from '@/api/game'
+import { getCustomerList } from '@/api/customer'
 
 export default {
-  components: { PageContainer }
+  components: { PageContainer },
+  data() {
+    return {
+      gameCount: 0,
+      customerCount: 0,
+      loading: false
+    }
+  },
+  mounted() {
+    this.fetchStatsData()
+  },
+  methods: {
+    async fetchStatsData() {
+      this.loading = true
+      try {
+        // 并行请求游戏和客户数据
+        const [gameRes, customerRes] = await Promise.all([
+          getGameList(),
+          getCustomerList()
+        ])
+        
+        // 计算游戏数量
+        if (gameRes && gameRes.code === 200 && gameRes.data) {
+          this.gameCount = Array.isArray(gameRes.data) ? gameRes.data.length : 0
+        }
+        
+        // 计算客户数量
+        if (customerRes && customerRes.code === 200 && customerRes.data) {
+          this.customerCount = Array.isArray(customerRes.data) ? customerRes.data.length : 0
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error)
+        this.$message.error('获取统计数据失败')
+      } finally {
+        this.loading = false
+      }
+    }
+  }
 }
 </script>
 
