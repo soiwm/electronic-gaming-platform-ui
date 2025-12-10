@@ -3,6 +3,38 @@
     <div class="game-management">
       <!-- 操作栏：添加游戏按钮 -->
   <div class="page-tools">
+    <div class="search-filter-container">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="请输入游戏名称搜索"
+        class="search-input"
+        clearable
+        @clear="handleSearchClear"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch">
+            <el-icon><Search /></el-icon>
+          </el-button>
+        </template>
+      </el-input>
+      
+      <el-select
+        v-model="selectedGameType"
+        placeholder="请选择游戏类型"
+        class="type-filter"
+        clearable
+        @change="handleTypeFilter"
+      >
+        <el-option
+          v-for="type in gameTypes"
+          :key="type"
+          :label="type"
+          :value="type"
+        />
+      </el-select>
+    </div>
+    
     <el-button type="primary" @click="openAddDialog">
       <el-icon><Plus /></el-icon> 添加游戏
     </el-button>
@@ -158,12 +190,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import { getGameList, addGame, getGameById, updateGame, deleteGame, uploadGameLogo } from '@/api/game.js'
 
 // 1. 列表数据
 const gameList = ref([])
+const originalGameList = ref([]) // 保存原始数据，用于筛选
 
 // 分页相关数据
 const currentPage = ref(1)
@@ -171,6 +204,11 @@ const pageSize = ref(8)
 
 // 计算属性：当前页显示的游戏列表
 const paginatedGameList = ref([])
+
+// 搜索和筛选相关数据
+const searchKeyword = ref('')
+const selectedGameType = ref('')
+const gameTypes = ref([]) // 存储所有游戏类型
 
 // 2. 添加游戏弹窗相关
 const addDialogVisible = ref(false)
@@ -220,6 +258,12 @@ const getGameData = async () => {
     if (res.code === 200) {
       console.log('游戏列表数据:', res.data)
       gameList.value = res.data
+      originalGameList.value = [...res.data] // 保存原始数据
+      
+      // 提取所有游戏类型
+      const types = [...new Set(res.data.map(game => game.type).filter(Boolean))]
+      gameTypes.value = types
+      
       updatePaginatedList() // 更新分页数据
     }
   } catch (error) {
@@ -350,7 +394,54 @@ const handleDeleteGame   = async (id) => {
   }
 }
 
-// 12. 处理添加游戏logo变化
+// 12. 搜索功能
+const handleSearch = () => {
+  // 重置页码到第一页
+  currentPage.value = 1
+  filterGames()
+}
+
+// 13. 清除搜索
+const handleSearchClear = () => {
+  searchKeyword.value = ''
+  currentPage.value = 1
+  filterGames()
+}
+
+// 14. 类型筛选
+const handleTypeFilter = () => {
+  currentPage.value = 1
+  filterGames()
+}
+
+// 15. 统一的筛选方法
+const filterGames = () => {
+  // 从原始数据开始筛选
+  let filteredList = [...originalGameList.value]
+  
+  // 按游戏名称搜索
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase()
+    filteredList = filteredList.filter(game => 
+      game.name.toLowerCase().includes(keyword)
+    )
+  }
+  
+  // 按游戏类型筛选
+  if (selectedGameType.value) {
+    filteredList = filteredList.filter(game => 
+      game.type === selectedGameType.value
+    )
+  }
+  
+  // 更新当前显示的游戏列表
+  gameList.value = filteredList
+  
+  // 更新分页数据
+  updatePaginatedList()
+}
+
+// 16. 处理添加游戏logo变化
 const handleAddLogoChange = async (file) => {
   // 检查文件类型
   const isJPG = file.raw.type === 'image/jpeg'
@@ -381,7 +472,7 @@ const handleAddLogoChange = async (file) => {
   }
 }
 
-// 13. 处理编辑游戏logo变化
+// 17. 处理编辑游戏logo变化
 const handleEditLogoChange = async (file) => {
   // 检查文件类型
   const isJPG = file.raw.type === 'image/jpeg'
@@ -412,7 +503,7 @@ const handleEditLogoChange = async (file) => {
   }
 }
 
-// 14. 获取游戏logo URL：仅做最小规则，避免拼错路径
+// 18. 获取游戏logo URL：仅做最小规则，避免拼错路径
 const getGameLogoUrl = (logo) => {
   // 无值用默认图（放在 public/images/game/ 下）
   if (!logo) return '/images/game/default-game.svg'
@@ -427,7 +518,7 @@ const getGameLogoUrl = (logo) => {
   return `/images/game/${logo}`
 }
 
-// 15. 处理图片加载错误
+// 19. 处理图片加载错误
 const handleImageError = (e) => {
   // 防止无限循环，只设置一次默认图片
   if (!e.target.src.includes('default-game.svg')) {
@@ -448,6 +539,23 @@ onMounted(() => {
 
 .page-tools {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-input {
+  width: 300px;
+}
+
+.type-filter {
+  width: 200px;
 }
 
 .game-list {
