@@ -32,6 +32,15 @@ module.exports = defineConfig({
         ws: true,
         // 可选：忽略 SSL 证书错误（如果后端用了 HTTPS 且是自签名证书）
         secure: false
+      },
+      // 配置静态资源代理：所有以 /images 开头的请求都会被转发到后端
+      '/images': {
+        target: 'http://localhost:8080', // 后端 Spring Boot 项目地址（本地）
+        changeOrigin: true, // 开启跨域支持（必须）
+        // 可选：配置支持 websocket（如果后端有 websocket 接口）
+        ws: true,
+        // 可选：忽略 SSL 证书错误（如果后端用了 HTTPS 且是自签名证书）
+        secure: false
       }
     }
   }

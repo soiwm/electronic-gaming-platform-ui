@@ -41,3 +41,18 @@ export function deleteGame(id) {
     method: 'delete'
   });
 }
+
+// 上传游戏logo
+export function uploadGameLogo(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return request({
+    url: '/api/upload/game/logo',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}

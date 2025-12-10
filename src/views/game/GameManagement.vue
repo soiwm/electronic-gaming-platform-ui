@@ -9,13 +9,20 @@
   </div>
 
       <!-- 游戏列表 -->
-      <div class="game-list" v-if="gameList.length > 0">
+      <div class="game-list" v-if="paginatedGameList.length > 0">
         <div 
           class="game-item" 
-          v-for="game in gameList" 
+          v-for="game in paginatedGameList" 
           :key="game.id"
           @click="openDetailDialog(game.id)"
         >
+          <div class="game-logo">
+            <img 
+              :src="getGameLogoUrl(game.logo)" 
+              :alt="game.name"
+              @error.once="handleImageError"
+            />
+          </div>
           <div class="game-item__header">
             <h3>{{ game.name }}</h3>
             <span class="game-type">{{ game.type }}</span>
@@ -33,6 +40,19 @@
         </div>
       </div>
 
+      <!-- 分页器 -->
+      <div class="pagination-container" v-if="gameList.length > 0">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[8, 16, 24, 32]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="gameList.length">
+        </el-pagination>
+      </div>
+
       <!-- 空状态 -->
       <div class="empty-state" v-else>
         <div class="empty-icon">
@@ -46,6 +66,19 @@
     <!-- 1. 添加游戏弹窗 -->
     <el-dialog title="添加游戏" v-model="addDialogVisible" width="500px">
       <el-form :model="addForm" :rules="formRules" ref="addFormRef" label-width="80px">
+        <el-form-item label="游戏Logo" prop="logo">
+          <el-upload
+            class="logo-uploader"
+            action="#"
+            :show-file-list="false"
+            :auto-upload="false"
+            :on-change="handleAddLogoChange"
+          >
+            <img v-if="addForm.logo" :src="getGameLogoUrl(addForm.logo)" class="logo-preview" />
+            <el-icon v-else class="logo-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+          <div class="logo-tip">支持jpg、png格式，建议尺寸200x200</div>
+        </el-form-item>
         <el-form-item label="游戏名称" prop="name">
           <el-input v-model="addForm.name" placeholder="请输入游戏名称" />
         </el-form-item>
@@ -81,6 +114,20 @@
         <el-form-item label="游戏ID">
           <el-input v-model="editForm.id" disabled /> <!-- ID 不可修改 -->
         </el-form-item>
+        <el-form-item label="游戏Logo" prop="logo">
+          <el-upload
+            class="logo-uploader"
+            action="#"
+            :show-file-list="false"
+            :auto-upload="false"
+            :on-change="handleEditLogoChange"
+            :disabled="dialogType === 'detail'"
+          >
+            <img v-if="editForm.logo" :src="getGameLogoUrl(editForm.logo)" class="logo-preview" />
+            <el-icon v-else class="logo-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+          <div class="logo-tip">支持jpg、png格式，建议尺寸200x200</div>
+        </el-form-item>
         <el-form-item label="游戏名称" prop="name">
           <el-input v-model="editForm.name" placeholder="请输入游戏名称" />
         </el-form-item>
@@ -113,10 +160,17 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import PageContainer from '@/components/common/PageContainer.vue'
-import { getGameList, addGame, getGameById, updateGame, deleteGame } from '@/api/game.js'
+import { getGameList, addGame, getGameById, updateGame, deleteGame, uploadGameLogo } from '@/api/game.js'
 
 // 1. 列表数据
 const gameList = ref([])
+
+// 分页相关数据
+const currentPage = ref(1)
+const pageSize = ref(8)
+
+// 计算属性：当前页显示的游戏列表
+const paginatedGameList = ref([])
 
 // 2. 添加游戏弹窗相关
 const addDialogVisible = ref(false)
@@ -125,7 +179,8 @@ const addForm = ref({
   name: '',
   type: '',
   description: '',
-  price: ''
+  price: '',
+  logo: ''
 })
 
 // 3. 详情/修改弹窗相关
@@ -136,7 +191,8 @@ const editForm = ref({
   name: '',
   type: '',
   description: '',
-  price: ''
+  price: '',
+  logo: ''
 })
 const dialogType = ref('detail') // 'detail' 详情模式，'edit' 修改模式
 
@@ -160,17 +216,40 @@ const formRules = ref({
 const getGameData = async () => {
   try {
     const res = await getGameList()
+    console.log('获取游戏列表响应:', res)
     if (res.code === 200) {
+      console.log('游戏列表数据:', res.data)
       gameList.value = res.data
+      updatePaginatedList() // 更新分页数据
     }
   } catch (error) {
     ElMessage.error('获取游戏列表失败：' + error.message)
   }
 }
 
+// 更新分页数据
+const updatePaginatedList = () => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  paginatedGameList.value = gameList.value.slice(start, end)
+}
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  updatePaginatedList()
+}
+
+// 处理每页显示数量变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1 // 重置到第一页
+  updatePaginatedList()
+}
+
 // 6. 打开添加游戏弹窗
 const openAddDialog = () => {
-  addForm.value = { name: '', type: '', description: '', price: '' } // 重置表单
+  addForm.value = { name: '', type: '', description: '', price: '', logo: '' } // 重置表单
   addDialogVisible.value = true
 }
 
@@ -271,6 +350,91 @@ const handleDeleteGame   = async (id) => {
   }
 }
 
+// 12. 处理添加游戏logo变化
+const handleAddLogoChange = async (file) => {
+  // 检查文件类型
+  const isJPG = file.raw.type === 'image/jpeg'
+  const isPNG = file.raw.type === 'image/png'
+  const isLt2M = file.raw.size / 1024 / 1024 < 2
+
+  if (!isJPG && !isPNG) {
+    ElMessage.error('上传头像图片只能是 JPG/PNG 格式!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+    return false
+  }
+
+  try {
+    // 上传图片到服务器
+    const res = await uploadGameLogo(file.raw)
+    if (res.code === 200) {
+      // 保存服务器返回的图片路径
+      addForm.value.logo = res.data
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(res.msg || '图片上传失败')
+    }
+  } catch (error) {
+    ElMessage.error('图片上传失败：' + error.message)
+  }
+}
+
+// 13. 处理编辑游戏logo变化
+const handleEditLogoChange = async (file) => {
+  // 检查文件类型
+  const isJPG = file.raw.type === 'image/jpeg'
+  const isPNG = file.raw.type === 'image/png'
+  const isLt2M = file.raw.size / 1024 / 1024 < 2
+
+  if (!isJPG && !isPNG) {
+    ElMessage.error('上传头像图片只能是 JPG/PNG 格式!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+    return false
+  }
+
+  try {
+    // 上传图片到服务器
+    const res = await uploadGameLogo(file.raw)
+    if (res.code === 200) {
+      // 保存服务器返回的图片路径
+      editForm.value.logo = res.data
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(res.msg || '图片上传失败')
+    }
+  } catch (error) {
+    ElMessage.error('图片上传失败：' + error.message)
+  }
+}
+
+// 14. 获取游戏logo URL：仅做最小规则，避免拼错路径
+const getGameLogoUrl = (logo) => {
+  // 无值用默认图（放在 public/images/game/ 下）
+  if (!logo) return '/images/game/default-game.svg'
+
+  // 完整 URL 直接返回
+  if (/^https?:\/\//i.test(logo)) return logo
+
+  // 以 / 开头：认为后端可直接访问的静态路径（走同域或 dev 代理）
+  if (logo.startsWith('/')) return logo
+
+  // 仅文件名：补上后端静态前缀
+  return `/images/game/${logo}`
+}
+
+// 15. 处理图片加载错误
+const handleImageError = (e) => {
+  // 防止无限循环，只设置一次默认图片
+  if (!e.target.src.includes('default-game.svg')) {
+    e.target.src = '/images/game/default-game.svg'
+  }
+}
+
 // 初始化加载列表
 onMounted(() => {
   getGameData()
@@ -300,6 +464,29 @@ onMounted(() => {
   transition: all 0.3s ease;
   position: relative; /* 关键：开启相对定位 */
   overflow: hidden; /* 防止价格标签超出容器 */
+}
+
+.game-logo {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+}
+
+.game-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.game-item:hover .game-logo img {
+  transform: scale(1.05);
 }
 
 /* 价格标签：绝对定位到左下角 */
@@ -368,5 +555,47 @@ onMounted(() => {
   font-size: 18px;
   margin-bottom: 8px;
   color: #333;
+}
+
+/* Logo上传组件样式 */
+.logo-uploader {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+
+.logo-uploader:hover {
+  border-color: var(--el-color-primary);
+}
+
+.logo-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 180px;
+  height: 180px;
+  text-align: center;
+  line-height: 180px;
+}
+
+.logo-preview {
+  width: 180px;
+  height: 180px;
+  display: block;
+  object-fit: cover;
+}
+
+.logo-tip {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 </style>

@@ -3,6 +3,8 @@ import MainLayout from '@/components/layout/MainLayout.vue'
 import Dashboard from '@/views/dashboard/Dashboard.vue'
 import GameManagement from '@/views/game/GameManagement.vue'
 import CustomerManagement from '@/views/customer/CustomerManagement.vue'
+import OrderManagement from '@/views/order/OrderManagement.vue'
+import StatisticsReports from '@/views/statistics/StatisticsReports.vue'
 import LoginManagement from '@/views/login/LoginManagement.vue'
 
 const routes = [
@@ -41,6 +43,18 @@ const routes = [
         name: 'CustomerManagement',
         component: CustomerManagement,
         meta: { title: '客户管理', icon: 'users' }
+      },
+      {
+        path: 'order-management',
+        name: 'OrderManagement',
+        component: OrderManagement,
+        meta: { title: '订单管理', icon: 'shopping-cart' }
+      },
+      {
+        path: 'statistics-reports',
+        name: 'StatisticsReports',
+        component: StatisticsReports,
+        meta: { title: '统计报表', icon: 'chart-bar' }
       }
     ]
   },

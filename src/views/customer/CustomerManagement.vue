@@ -9,10 +9,10 @@
       </div>
 
       <!-- 客户列表 -->
-      <div class="customer-list" v-if="customerList.length > 0">
+      <div class="customer-list" v-if="paginatedCustomerList.length > 0">
         <div 
           class="customer-item" 
-          v-for="customer in customerList" 
+          v-for="customer in paginatedCustomerList" 
           :key="customer.id"
           @click="openDetailDialog(customer.id)"
         >
@@ -29,6 +29,19 @@
             <el-button type="text" text-color="#ff4d4f" @click.stop="handleDeleteCustomer(customer.id)">删除</el-button>
           </div>
         </div>
+      </div>
+
+      <!-- 分页器 -->
+      <div class="pagination-container" v-if="customerList.length > 0">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[8, 16, 24, 32]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="customerList.length">
+        </el-pagination>
       </div>
 
       <!-- 空状态 -->
@@ -129,6 +142,13 @@ import { getCustomerList, addCustomer, getCustomerById, updateCustomer, deleteCu
 // 1. 客户列表数据
 const customerList = ref([])
 
+// 分页相关数据
+const currentPage = ref(1)
+const pageSize = ref(8)
+
+// 计算属性：当前页显示的客户列表
+const paginatedCustomerList = ref([])
+
 // 2. 添加客户弹窗相关
 const addDialogVisible = ref(false)
 const addFormRef = ref(null)
@@ -180,10 +200,31 @@ const getCustomerData = async () => {
     const res = await getCustomerList()
     if (res.code === 200) {
       customerList.value = res.data
+      updatePaginatedList() // 更新分页数据
     }
   } catch (error) {
     ElMessage.error('获取客户列表失败：' + error.message)
   }
+}
+
+// 更新分页数据
+const updatePaginatedList = () => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  paginatedCustomerList.value = customerList.value.slice(start, end)
+}
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  updatePaginatedList()
+}
+
+// 处理每页显示数量变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1 // 重置到第一页
+  updatePaginatedList()
 }
 
 // 6. 打开添加客户弹窗
@@ -386,5 +427,11 @@ onMounted(() => {
   font-size: 18px;
   margin-bottom: 8px;
   color: #333;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 </style>
