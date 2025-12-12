@@ -18,11 +18,14 @@ import {
   faUser, 
   faSignOutAlt,
   faShoppingCart,
-  faChartBar
+  faChartBar,
+  faEdit,
+  faTrash,
+  faPlus
 } from '@fortawesome/free-solid-svg-icons'
 
 // 注册常用图标
-library.add(faGamepad, faUsers, faHome, faBars, faUser, faSignOutAlt, faShoppingCart, faChartBar)
+library.add(faGamepad, faUsers, faHome, faBars, faUser, faSignOutAlt, faShoppingCart, faChartBar, faEdit, faTrash, faPlus)
 
 const app = createApp(App)
 app.use(ElementPlus)

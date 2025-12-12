@@ -86,6 +86,9 @@ export default {
       }
     },
     renderSalesChart(data) {
+      // 确保数据按销量降序排列
+      const sortedData = [...data].sort((a, b) => b.sales - a.sales);
+      
       const option = {
         title: {
           text: '游戏销量排行',
@@ -100,22 +103,26 @@ export default {
         grid: {
           left: '3%',
           right: '4%',
-          bottom: '3%',
+          bottom: '15%', // 增加底部空间，避免游戏名称重叠
           containLabel: true
         },
         xAxis: {
-          type: 'value',
-          boundaryGap: [0, 0.01]
+          type: 'category', // 改为分类轴
+          data: sortedData.map(item => item.gameName),
+          axisLabel: {
+            rotate: 45, // 旋转45度，避免标签重叠
+            interval: 0 // 显示所有标签
+          }
         },
         yAxis: {
-          type: 'category',
-          data: data.map(item => item.gameName)
+          type: 'value', // 改为数值轴
+          boundaryGap: [0, 0.01]
         },
         series: [
           {
             name: '销量',
             type: 'bar',
-            data: data.map(item => item.sales),
+            data: sortedData.map(item => item.sales),
             itemStyle: {
               color: '#1989fa'
             }

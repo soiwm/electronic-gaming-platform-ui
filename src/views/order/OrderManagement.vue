@@ -3,17 +3,17 @@
     <div class="order-management">
       <div class="toolbar">
         <el-button type="primary" @click="handleAdd">
-          <font-awesome-icon icon="plus" />
+          <font-awesome-icon :icon="['fas', 'plus']" />
           新增订单
         </el-button>
         <el-button type="danger" :disabled="!selectedOrders.length" @click="handleBatchDelete">
-          <font-awesome-icon icon="trash" />
+          <font-awesome-icon :icon="['fas', 'trash']" />
           批量删除
         </el-button>
       </div>
 
       <el-table
-        :data="orderList"
+        :data="paginatedOrderList"
         style="width: 100%"
         v-loading="loading"
         @selection-change="handleSelectionChange"
@@ -32,30 +32,30 @@
             {{ formatDateTime(scope.row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="180">
           <template #default="scope">
             <el-button size="small" type="primary" @click="handleEdit(scope.row)">
-              <font-awesome-icon icon="edit" />
+              <font-awesome-icon :icon="['fas', 'edit']" />
               编辑
             </el-button>
             <el-button size="small" type="danger" @click="handleDelete(scope.row)">
-              <font-awesome-icon icon="trash" />
+              <font-awesome-icon :icon="['fas', 'trash']" />
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="pagination">
+      <div class="pagination" v-if="orderList.length > 0">
         <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
-        />
+          :current-page="currentPage"
+          :page-sizes="[10, 20, 30, 40]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="orderList.length">
+        </el-pagination>
       </div>
 
       <!-- 订单表单对话框 -->
@@ -72,7 +72,7 @@
           label-width="100px"
         >
           <el-form-item label="客户" prop="customerId">
-            <el-select v-model="orderForm.customerId" placeholder="请选择客户" style="width: 100%">
+            <el-select v-model="orderForm.customerId" placeholder="请选择客户" style="width: 100%" value-key="id">
               <el-option
                 v-for="customer in customerList"
                 :key="customer.id"
@@ -82,7 +82,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="游戏" prop="gameId">
-            <el-select v-model="orderForm.gameId" placeholder="请选择游戏" style="width: 100%">
+            <el-select v-model="orderForm.gameId" placeholder="请选择游戏" style="width: 100%" value-key="id">
               <el-option
                 v-for="game in gameList"
                 :key="game.id"
@@ -122,13 +122,13 @@ export default {
   data() {
     return {
       orderList: [],
+      paginatedOrderList: [],
       customerList: [],
       gameList: [],
       loading: false,
       selectedOrders: [],
       currentPage: 1,
       pageSize: 10,
-      total: 0,
       dialogVisible: false,
       dialogTitle: '',
       isEdit: false,
@@ -157,7 +157,7 @@ export default {
         const res = await getOrderList()
         if (res && res.code === 200) {
           this.orderList = res.data || []
-          this.total = this.orderList.length
+          this.updatePaginatedList() // 更新分页数据
         }
       } catch (error) {
         console.error('获取订单列表失败:', error)
@@ -191,11 +191,18 @@ export default {
     },
     handleSizeChange(val) {
       this.pageSize = val
-      this.fetchOrderList()
+      this.currentPage = 1 // 重置到第一页
+      this.updatePaginatedList()
     },
     handleCurrentChange(val) {
       this.currentPage = val
-      this.fetchOrderList()
+      this.updatePaginatedList()
+    },
+    // 更新分页数据
+    updatePaginatedList() {
+      const start = (this.currentPage - 1) * this.pageSize
+      const end = start + this.pageSize
+      this.paginatedOrderList = this.orderList.slice(start, end)
     },
     handleAdd() {
       this.isEdit = false
@@ -209,10 +216,31 @@ export default {
       this.dialogVisible = true
     },
     handleEdit(row) {
+      console.log('编辑订单原始数据:', row)
+      console.log('客户列表:', this.customerList)
+      console.log('游戏列表:', this.gameList)
+      
       this.isEdit = true
       this.dialogTitle = '编辑订单'
-      this.orderForm = { ...row }
-      this.dialogVisible = true
+      
+      // 通过名称查找对应的ID
+      const customer = this.customerList.find(c => c.name === row.customerName)
+      const game = this.gameList.find(g => g.name === row.gameName)
+      
+      // 直接使用原始值，不进行类型转换
+      this.orderForm = {
+        id: row.id,
+        customerId: customer ? customer.id : null,
+        gameId: game ? game.id : null,
+        purchaseDate: row.createTime ? new Date(row.createTime).toISOString().split('T')[0] : ''
+      }
+      
+      console.log('设置后的表单数据:', this.orderForm)
+      
+      // 使用$nextTick确保DOM更新后再打开对话框
+      this.$nextTick(() => {
+        this.dialogVisible = true
+      })
     },
     async handleDelete(row) {
       try {
@@ -264,15 +292,32 @@ export default {
             const customer = this.customerList.find(c => c.id === this.orderForm.customerId)
             const game = this.gameList.find(g => g.id === this.orderForm.gameId)
             
+            // 确保客户和游戏存在
+            if (!customer) {
+              this.$message.error('选择的客户不存在')
+              return
+            }
+            if (!game) {
+              this.$message.error('选择的游戏不存在')
+              return
+            }
+            
+            // 构建提交数据，只包含后端需要的字段
             const submitData = {
-              ...this.orderForm,
-              customerName: customer ? customer.name : '',
-              gameName: game ? game.name : '',
-              amount: game ? game.price : 0
+              customerId: this.orderForm.customerId,
+              gameId: this.orderForm.gameId,
+              amount: game.price || 0
+            }
+            
+            // 确保不包含id字段（新增时不需要）
+            if (submitData.id) {
+              delete submitData.id
             }
             
             let res
             if (this.isEdit) {
+              // 编辑时需要添加ID
+              submitData.id = this.orderForm.id
               res = await updateOrder(submitData)
             } else {
               res = await addOrder(submitData)
@@ -287,7 +332,9 @@ export default {
             }
           } catch (error) {
             console.error(this.isEdit ? '更新订单失败:' : '添加订单失败:', error)
-            this.$message.error(this.isEdit ? '更新订单失败' : '添加订单失败')
+            // 显示更详细的错误信息
+            const errorMsg = error.response?.data?.message || error.message || (this.isEdit ? '更新订单失败' : '添加订单失败')
+            this.$message.error(errorMsg)
           }
         }
       })

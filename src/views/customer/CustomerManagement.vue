@@ -23,6 +23,7 @@
           <div class="customer-item__info">
             <p><i class="el-icon el-icon-phone"></i> {{ customer.phone || '无' }}</p>
             <p><i class="el-icon el-icon-location"></i> {{ customer.address || '无' }}</p>
+            <p><i class="el-icon el-icon-date"></i> {{ customer.birthDate || '无' }}</p>
           </div>
           <div class="customer-item__footer">
             <el-button type="text" @click.stop="openEditDialog(customer.id)">修改</el-button>
@@ -75,6 +76,15 @@
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="addForm.email" placeholder="请输入客户邮箱（选填）" />
         </el-form-item>
+        <el-form-item label="出生年月" prop="birthDate">
+          <el-date-picker
+            v-model="addForm.birthDate"
+            type="date"
+            placeholder="请选择出生年月"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="addDialogVisible = false">取消</el-button>
@@ -115,6 +125,15 @@
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="editForm.email" placeholder="请输入客户邮箱" />
+        </el-form-item>
+        <el-form-item label="出生年月" prop="birthDate">
+          <el-date-picker
+            v-model="editForm.birthDate"
+            type="date"
+            placeholder="请选择出生年月"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -157,7 +176,8 @@ const addForm = ref({
   gender: '',
   phone: '',
   address: '',
-  email: ''
+  email: '',
+  birthDate: ''
 })
 
 // 3. 详情/修改弹窗相关
@@ -169,7 +189,8 @@ const editForm = ref({
   gender: '',
   phone: '',
   address: '',
-  email: ''
+  email: '',
+  birthDate: ''
 })
 const dialogType = ref('detail') // 'detail' 详情模式，'edit' 修改模式
 
@@ -229,7 +250,7 @@ const handleSizeChange = (size) => {
 
 // 6. 打开添加客户弹窗
 const openAddDialog = () => {
-  addForm.value = { name: '', gender: '', phone: '', address: '', email: '' } // 重置表单
+  addForm.value = { name: '', gender: '', phone: '', address: '', email: '', birthDate: '' } // 重置表单
   addDialogVisible.value = true
 }
 
@@ -274,7 +295,10 @@ const openEditDialog = async (id) => {
   try {
     const res = await getCustomerById(id)
     if (res.code === 200) {
-      editForm.value = res.data // 回显客户信息
+      editForm.value = {
+        ...res.data,
+        birthDate: res.data.birthDate || ''
+      } // 回显客户信息
       dialogType.value = 'edit'
       detailDialogVisible.value = true
     }
